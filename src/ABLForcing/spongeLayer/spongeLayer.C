@@ -41,12 +41,50 @@ void Foam::spongeLayer::update()
     // Compute the sponge layer damping force
     if (type_ == "Rayleigh")
     {
+        if (isTimeVarying_)
+        {
+            updateUref();
+        }
         bodyForce_ = viscosity_ * (Uref_ - U_);
     }
     else if (type_ == "viscous")
     {
         bodyForce_ = fvc::laplacian(viscosity_,U_);
     }
+}
+
+void Foam::spongeLayer::updateUref()
+{
+    scalar curTime(runTime_.timeOutputValue());
+    scalar curUx;
+    scalar curUy;
+    if (curTime < times_[0])
+    {
+        curUx = Uxhist_[0];
+        curUy = Uyhist_[0];
+    }
+    else if (curTime >= times_[times_.size()-1])
+    {
+        curUx = Uxhist_[times_.size()-1];
+        curUy = Uyhist_[times_.size()-1];
+    }
+    else
+    {
+        // linearly interpolate
+        label i;
+        for (i=0; i < times_.size()-1; i++)
+        {
+            if (curTime >= times_[i]) break;
+        }
+        scalar f = (curTime - times_[i]) / (times_[i+1] - times_[i]);
+        curUx = Uxhist_[i] + f*(Uxhist_[i+1] - Uxhist_[i]);
+        curUy = Uyhist_[i] + f*(Uyhist_[i+1] - Uyhist_[i]);
+    }
+    vector curUref(curUx, curUy, 0);
+    Info<< "   sponge layer " << name_ << " velocity"
+        << " at t= " << curTime << " : " << curUref
+        << endl;
+    Uref_ = dimensionedVector("Uref", dimensionSet(0, 1, -1, 0, 0, 0, 0), curUref);
 }
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //

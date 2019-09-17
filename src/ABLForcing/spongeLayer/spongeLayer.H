@@ -101,6 +101,11 @@ class spongeLayer
         //- Body force field of the sponge layer
         volVectorField bodyForce_;
 
+    // Private Member functions
+
+        //- Interpolate sponge layer reference velocity
+        void updateUref();
+
 
 public:
 
