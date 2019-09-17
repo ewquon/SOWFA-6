@@ -87,6 +87,11 @@ class spongeLayer
         //- Type of input reference velocity (constant/time-varying)
         Switch isConstUref_;
 
+        //- Input reference velocity history
+        List<scalar> times_;
+        List<scalar> Uxhist_;
+        List<scalar> Uyhist_;
+
         //- Reference velocity field
         uniformDimensionedVectorField Uref_;
 

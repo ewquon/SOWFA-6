@@ -160,6 +160,12 @@ Foam::spongeLayer::spongeLayer
         Uref.z() = 0.0;
         Uref_ = dimensionedVector("Uref", dimensionSet(0, 1, -1, 0, 0, 0, 0), Uref);
     }
+    else
+    {
+        times_ = List<scalar>( spongeDict.lookup("times"));
+        Uxhist_ = List<scalar>( spongeDict.lookup("Uxhist"));
+        Uyhist_ = List<scalar>( spongeDict.lookup("Uyhist"));
+    }
     
     if (type_ == "Rayleigh" || type_ == "viscous")
     {
