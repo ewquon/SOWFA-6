@@ -165,6 +165,11 @@ Foam::spongeLayer::spongeLayer
         times_ = List<scalar>( spongeDict.lookup("times"));
         Uxhist_ = List<scalar>( spongeDict.lookup("Uxhist"));
         Uyhist_ = List<scalar>( spongeDict.lookup("Uyhist"));
+        if ((times_.size() != Uxhist_.size()) || (Uxhist_.size() != Uyhist_.size()))
+        {
+            FatalError << "times, Uxhist, and/or Uyhist lists differ in length" << nl
+                       << exit(FatalError);
+        }
     }
     
     if (type_ == "Rayleigh" || type_ == "viscous")
