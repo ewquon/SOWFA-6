@@ -75,6 +75,9 @@ class spongeLayer
         //- Type of sponge layer
         word type_;
 
+        //- Type of input reference velocity (constant/time-varying)
+        Switch isConstUref_;
+
         //- Reference velocity field
         uniformDimensionedVectorField Uref_;
 

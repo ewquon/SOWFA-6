@@ -132,6 +132,8 @@ Foam::spongeLayer::spongeLayer
 
     type_ = spongeDict.lookupOrDefault<word>("type","none");
 
+    isConstUref_ = spongeDict.lookupOrDefault<Switch>("constRef", true);
+
     // Sponge layer start location
     scalar startLocation = spongeDict.lookupOrDefault<scalar>("startLocation",0.0);
 
@@ -148,14 +150,16 @@ Foam::spongeLayer::spongeLayer
     word direction = spongeDict.lookupOrDefault<word>("direction","stepUp");
 
     // Create sponge layer reference velocity
-    scalar Ux = spongeDict.lookupOrDefault<scalar>("Ux",0.0);
-    scalar Uy = spongeDict.lookupOrDefault<scalar>("Uy",0.0);
-    vector Uref;
-    Uref.x() = Ux;
-    Uref.y() = Uy;
-    Uref.z() = 0.0;
-
-    Uref_ = dimensionedVector("Uref", dimensionSet(0, 1, -1, 0, 0, 0, 0), Uref);
+    if (isConstUref_)
+    {
+        scalar Ux = spongeDict.lookupOrDefault<scalar>("Ux",0.0);
+        scalar Uy = spongeDict.lookupOrDefault<scalar>("Uy",0.0);
+        vector Uref;
+        Uref.x() = Ux;
+        Uref.y() = Uy;
+        Uref.z() = 0.0;
+        Uref_ = dimensionedVector("Uref", dimensionSet(0, 1, -1, 0, 0, 0, 0), Uref);
+    }
     
     if (type_ == "Rayleigh" || type_ == "viscous")
     {
