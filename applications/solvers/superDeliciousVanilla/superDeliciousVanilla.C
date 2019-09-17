@@ -99,6 +99,9 @@ int main(int argc, char *argv[])
             momentumSourceTerm.update(pimple.finalPimpleIter());
             temperatureSourceTerm.update(pimple.finalPimpleIter());
 
+            // Update sponge layers.
+            spongeLayerUpper.update();
+
             // Predictor step.
             Info << "   Predictor" << endl;
 

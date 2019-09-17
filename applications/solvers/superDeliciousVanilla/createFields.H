@@ -83,6 +83,11 @@ drivingForce<vector> momentumSourceTerm("momentum",U);
 drivingForce<scalar> temperatureSourceTerm("temperature",T);
 
 
+// Create sponge layer object
+Info << "Creating upper sponge layer" << endl;
+spongeLayer spongeLayerUpper("upperSponge",U);
+
+
 // Create and read the kinematic turbulent thermal conductivity [m2/s].
 Info << "Creating and reading turbulent thermal conductivity field, kappat" << endl;
 volScalarField kappat
