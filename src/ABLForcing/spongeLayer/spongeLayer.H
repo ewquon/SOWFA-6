@@ -26,12 +26,21 @@ Class
 
 Description
     Sponge layer for damping out vertically propagating gravity waves
+
     Possible sponge layer types are "Rayleigh", "viscous" or "none".
     - The "Rayleigh" type means that the damping term is computed as nu*(u_ref-u)
       The viscosity coefficient nu has dimensions of 1/s
     - The "viscous" type means that the damping term is computed as nu * Lapl(u)
       The viscosity coefficient nu has dimensions of m**2/s
     - The "none" type means no damping is added
+
+    The reference velocitities may be constant or time-varying.  If constant,
+    then:
+    - specify Ux, Uy (scalars)
+    Otherwise, if time-varying, then:
+    - set constRef to false
+    - specify times, Uxhist, Uyhist (scalarLists)
+
 
 SourceFiles
     spongeLayer.C
