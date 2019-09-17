@@ -132,7 +132,7 @@ Foam::spongeLayer::spongeLayer
 
     type_ = spongeDict.lookupOrDefault<word>("type","none");
 
-    isConstUref_ = spongeDict.lookupOrDefault<Switch>("constRef", true);
+    isTimeVarying_ = spongeDict.lookupOrDefault<Switch>("timeVarying", false);
 
     // Sponge layer start location
     scalar startLocation = spongeDict.lookupOrDefault<scalar>("startLocation",0.0);
@@ -150,7 +150,7 @@ Foam::spongeLayer::spongeLayer
     word direction = spongeDict.lookupOrDefault<word>("direction","stepUp");
 
     // Create sponge layer reference velocity
-    if (isConstUref_)
+    if (!isTimeVarying_)
     {
         scalar Ux = spongeDict.lookupOrDefault<scalar>("Ux",0.0);
         scalar Uy = spongeDict.lookupOrDefault<scalar>("Uy",0.0);
@@ -162,14 +162,19 @@ Foam::spongeLayer::spongeLayer
     }
     else
     {
-        times_ = List<scalar>( spongeDict.lookup("times"));
-        Uxhist_ = List<scalar>( spongeDict.lookup("Uxhist"));
-        Uyhist_ = List<scalar>( spongeDict.lookup("Uyhist"));
-        if ((times_.size() != Uxhist_.size()) || (Uxhist_.size() != Uyhist_.size()))
+        List<List<scalar> > UrefTable(spongeDict.lookup("UrefTable"));
+        times_ = scalarField(UrefTable.size(), 0.0);
+        Uxhist_ = scalarField(UrefTable.size(), 0.0);
+        Uyhist_ = scalarField(UrefTable.size(), 0.0);
+        forAll(times_, i)
         {
-            FatalError << "times, Uxhist, and/or Uyhist lists differ in length" << nl
-                       << exit(FatalError);
+            times_[i] = UrefTable[i][0];
+            Uxhist_[i] = UrefTable[i][1];
+            Uyhist_[i] = UrefTable[i][2];
         }
+        Info<< "Reference velocities read for"
+            << " t from " << times_[0]
+            << " to " << times_[UrefTable.size()-1] << endl;
     }
     
     if (type_ == "Rayleigh" || type_ == "viscous")

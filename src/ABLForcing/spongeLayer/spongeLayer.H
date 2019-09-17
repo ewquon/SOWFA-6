@@ -37,9 +37,9 @@ Description
     The reference velocitities may be constant or time-varying.  If constant,
     then:
     - specify Ux, Uy (scalars)
-    Otherwise, if time-varying, then:
-    - set constRef to false
-    - specify times, Uxhist, Uyhist (scalarLists)
+    Otherwise:
+    - set timeVarying to true
+    - specify UrefTable (a list of scalar lists) with time, Ux, and Uy columns
 
 
 SourceFiles
@@ -85,7 +85,7 @@ class spongeLayer
         word type_;
 
         //- Type of input reference velocity (constant/time-varying)
-        Switch isConstUref_;
+        Switch isTimeVarying_;
 
         //- Input reference velocity history
         List<scalar> times_;
