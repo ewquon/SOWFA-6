@@ -58,28 +58,29 @@ void Foam::spongeLayer::updateUref()
     scalar curTime(runTime_.timeOutputValue());
     scalar curUx;
     scalar curUy;
-    if (curTime < times_[0])
+    if (curTime <= times_[0])
     {
         curUx = Uxhist_[0];
         curUy = Uyhist_[0];
     }
-    else if (curTime >= times_[times_.size()-1])
+    else if (curTime > times_[times_.size()-1])
     {
         curUx = Uxhist_[times_.size()-1];
         curUy = Uyhist_[times_.size()-1];
     }
     else
     {
-        // linearly interpolate
+        // linearly interpolate between i-1,i
         label i;
-        for (i=0; i < times_.size()-1; i++)
+        for (i=1; i < times_.size(); i++)
         {
-            if (curTime >= times_[i]) break;
+            if (curTime <= times_[i]) break;
         }
-        scalar f = (curTime - times_[i]) / (times_[i+1] - times_[i]);
-        curUx = Uxhist_[i] + f*(Uxhist_[i+1] - Uxhist_[i]);
-        curUy = Uyhist_[i] + f*(Uyhist_[i+1] - Uyhist_[i]);
+        scalar f = (curTime - times_[i-1]) / (times_[i] - times_[i-1]);
+        curUx = Uxhist_[i-1] + f*(Uxhist_[i] - Uxhist_[i-1]);
+        curUy = Uyhist_[i-1] + f*(Uyhist_[i] - Uyhist_[i-1]);
     }
+    // update reference field
     vector curUref(curUx, curUy, 0);
     Info<< "   sponge layer " << name_ << " velocity"
         << " at t= " << curTime << " : " << curUref
