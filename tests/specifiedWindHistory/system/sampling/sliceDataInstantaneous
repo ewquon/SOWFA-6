@@ -1,0 +1,29 @@
+      sliceDataInstantaneous
+      {
+          type                  surfaces;
+          functionObjectLibs    ("libsampling.so");
+          enabled               true;
+          interpolationScheme   cell;
+          writeControl          adjustableRunTime;
+          writeInterval         10;
+          surfaceFormat         vtk;
+          fields
+          (
+              U
+              p_rgh
+          );
+          surfaces
+          (
+              slice_horizontal
+              {
+                  type          cuttingPlane;
+                  planeType     pointAndNormal;
+                  pointAndNormalDict
+                  {
+                      basePoint     (0.001 0.001 250.0);
+                      normalVector  (0 0 1);
+                  }
+                  interpolate   true;
+              }
+          );
+      }
