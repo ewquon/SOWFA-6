@@ -54,13 +54,6 @@ int main(int argc, char *argv[])
     #include "setRootCase.H"
     #include "createTime.H"
 
-    List<scalar> rotSpd;
-    List<scalar> genTq;
-    List<scalar> blPitch;
-    List<scalar> rotSpdErr;
-    List<scalar> genTqErr;
-    List<scalar> blPitchErr;
-
     #include "readData.H"
     #include "initAVR.H"
 
@@ -69,7 +62,6 @@ int main(int argc, char *argv[])
         runTime++;
         t = runTime.value();
         Info<< "Time = " << t << " " << endl;
-        dt = runTime.deltaTValue();
         const label itime = runTime.timeIndex();
         const scalar ws = wspdTable->value(runTime.value());
         Info<< "  ws = " << ws << endl;

@@ -37,7 +37,3 @@ Info<< "Initial conditions:"
     << " bladePitch=" << blPitchTable->value(0)
     << endl;
 
-rotSpd.append(rotSpdTable->value(0));
-genTq.append(genTqTable->value(0));
-blPitch.append(blPitchTable->value(0));
-

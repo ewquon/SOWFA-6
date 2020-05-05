@@ -1,3 +1,18 @@
+// Define saved quantities for verification
+const scalar dt = runTime.deltaTValue();
+const label N = runTime.endTime().value() / dt;
+List<scalar> rotSpd(N+1, 0.0);
+List<scalar> genTq(N+1, 0.0);
+List<scalar> blPitch(N+1, 0.0);
+List<scalar> rotSpdErr;
+List<scalar> genTqErr;
+List<scalar> blPitchErr;
+
+rotSpd[0] = rotSpdTable->value(0.0);
+genTq[0] = genTqTable->value(0.0);
+blPitch[0] = blPitchTable->value(0.0);
+
+// Define exchange variables
 float avrSWAP[AVRSIZE];
 int aviFAIL[] = {1};
 const char accINFILE[] = "DISCON.IN";
@@ -11,7 +26,6 @@ for(int i=0; i<= AVRSIZE; i++)
 
 // Define some avrSWAP parameters
 scalar t = runTime.value();
-scalar dt = runTime.deltaTValue();
 Info<< "dt = " << dt << endl;
 avrSWAP[2] = dt;
 avrSWAP[60] = 3; // number of blades
