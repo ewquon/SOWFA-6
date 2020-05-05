@@ -1,4 +1,7 @@
-EXE_INC = 
+EXE_INC = \
+    -I$(SOWFA_DIR)/src/ABLForcing/lnInclude
 
-EXE_LIBS = 
+EXE_LIBS = \
+    -L$(SOWFA_DIR)/lib/$(WM_OPTIONS) \
+    -ldiscon
     

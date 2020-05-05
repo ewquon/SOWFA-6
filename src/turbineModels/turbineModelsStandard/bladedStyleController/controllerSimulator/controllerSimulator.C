@@ -38,6 +38,12 @@ Description
 #include "argList.H"
 #include "IOdictionary.H"
 #include "Function1.H"
+#include "interpolate2D.H"
+
+//#include "bladedStyleController.H"
+extern "C" {
+    #include "DISCON.H"
+}
 
 using namespace Foam;
 
@@ -45,41 +51,57 @@ using namespace Foam;
 
 int main(int argc, char *argv[])
 {
-//    timeSelector::addOptions();
-//    #include "addRegionOption.H"
     #include "setRootCase.H"
     #include "createTime.H"
-//    instantList timeDirs = timeSelector::select0(runTime, args);
 
-//    #include "createNamedPolyMesh.H"
+    List<scalar> rotSpd;
+    List<scalar> genTq;
+    List<scalar> blPitch;
+    List<scalar> rotSpdErr;
+    List<scalar> genTqErr;
+    List<scalar> blPitchErr;
 
-    IOdictionary controllerVerificationDict
-    (
-        IOobject
-        (
-            "controllerVerificationDict",
-            runTime.time().system(),
-            runTime,
-            IOobject::MUST_READ,
-            IOobject::NO_WRITE
-        )
-    );
-    autoPtr<Function1<scalar>> wspd = Function1<scalar>::New("windSpeed", controllerVerificationDict);
-    autoPtr<Function1<scalar>> rotSpd = Function1<scalar>::New("rotorSpeed", controllerVerificationDict);
-    autoPtr<Function1<scalar>> genTq = Function1<scalar>::New("generatorTorque", controllerVerificationDict);
-    autoPtr<Function1<scalar>> blPitch = Function1<scalar>::New("bladePitch", controllerVerificationDict);
-
-    Info<< "Initial conditions:"
-        << " windSpeed=" << wspd->value(0)
-        << " rotorSpeed=" << rotSpd->value(0)
-        << " generatorTorque=" << genTq->value(0)
-        << " bladePitch=" << blPitch->value(0)
-        << endl;
+    #include "readData.H"
+    #include "initAVR.H"
 
     while(runTime.run())
     {
         runTime++;
-        //Info<< 
+        t = runTime.value();
+        Info<< "Time = " << t << " " << endl;
+        dt = runTime.deltaTValue();
+        const label itime = runTime.timeIndex();
+        const scalar ws = wspdTable->value(runTime.value());
+        Info<< "  ws = " << ws << endl;
+
+        // Load current Cq data
+        const scalar tsr = rotSpd[itime-1] * R / ws;
+        Info<< "  tsr = " << tsr << endl;
+        const scalar Cq = interpolate2D(blPitch[itime-1], tsr,
+                                        refPitch,
+                                        refTSR,
+                                        refCq);
+        Info<< "  Cq = " << Cq << endl;
+
+        // Update the turbine state
+        const scalar aeroTq = 0.5 * rho*ws*ws * R * (M_PI * R * R) * Cq;
+        Info<< "  aeroTq = " << aeroTq << endl;
+        rotSpd[itime] = rotSpd[itime-1] 
+                      + (dt/J)*(aeroTq*genEff - Ng*genTq[itime-1]);
+        const scalar genSpd = rotSpd[itime] * Ng;
+        Info<< "  rotSpd = " << rotSpd[itime] << endl;
+
+        // Call the controller
+        #include "callController.H"
+        blPitch[itime] = avrSWAP[41];  // TODO: where do these controller states come from?
+        genTq[itime] = avrSWAP[46];
+        Info<< "  blPitch = " << blPitch[itime] << endl;
+        Info<< "  genTq = " << genTq[itime] << endl;
+
+        // Save errors
+        rotSpdErr.append(rotSpd[itime] - rotSpdTable->value(t));
+        genTqErr.append(genTq[itime] - genTqTable->value(t));
+        blPitchErr.append(blPitch[itime] - blPitchTable->value(t));
     }
 
     Info<< "End\n" << endl;
