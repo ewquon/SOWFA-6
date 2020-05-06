@@ -3,7 +3,7 @@ IOdictionary controllerVerificationDict
     IOobject
     (
         "controllerVerificationDict",
-        runTime.time().system(),
+        runTime.system(),
         runTime,
         IOobject::MUST_READ,
         IOobject::NO_WRITE
