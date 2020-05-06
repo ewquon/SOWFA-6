@@ -52,6 +52,8 @@ using namespace Foam;
 
 int main(int argc, char *argv[])
 {
+    const Switch dbg(false);
+
     #include "setRootCase.H"
     #include "createTime.H"
 
@@ -65,24 +67,24 @@ int main(int argc, char *argv[])
         Info<< "Time = " << t << " " << endl;
         const label itime = runTime.timeIndex();
         wspd[itime] = wspdTable->value(runTime.value());
-        Info<< "  ws = " << wspd[itime] << endl;
+        if(dbg) Info<< "  ws = " << wspd[itime] << endl;
 
         // Load current Cq data
         const scalar tsr = rotSpd[itime-1] * R / wspd[itime];
-        Info<< "  tsr = " << tsr << endl;
+        if(dbg) Info<< "  tsr = " << tsr << endl;
         const scalar Cq = interpolate2D(blPitch[itime-1], tsr,
                                         refPitch,
                                         refTSR,
                                         refCq);
-        Info<< "  Cq = " << Cq << endl;
+        if(dbg) Info<< "  Cq = " << Cq << endl;
 
         // Update the turbine state
         const scalar aeroTq = 0.5 * rho*wspd[itime]*wspd[itime] * R * (M_PI * R * R) * Cq;
-        Info<< "  aeroTq = " << aeroTq << endl;
+        if(dbg) Info<< "  aeroTq = " << aeroTq << endl;
         rotSpd[itime] = rotSpd[itime-1] 
                       + (dt/J)*(aeroTq*genEff - Ng*genTq[itime-1]);
         const scalar genSpd = rotSpd[itime] * Ng;
-        Info<< "  rotSpd = " << rotSpd[itime] << endl;
+        if(dbg) Info<< "  rotSpd = " << rotSpd[itime] << endl;
 
         // Call the controller
         avrSWAP[1] = t; // current time [s]
@@ -100,18 +102,18 @@ int main(int argc, char *argv[])
 
         blPitch[itime] = avrSWAP[41];  // TODO: where do these controller states come from?
         genTq[itime] = avrSWAP[46];
-        Info<< "  blPitch = " << blPitch[itime] << endl;
-        Info<< "  genTq = " << genTq[itime] << endl;
+        if(dbg) Info<< "  blPitch = " << blPitch[itime] << endl;
+        if(dbg) Info<< "  genTq = " << genTq[itime] << endl;
 
         // DEBUG
-//        if(itime==1)
-//        {
-//            OFstream avr1File("avrSWAP1");
-//            for(int i=0; i<AVRSIZE; i++)
-//            {
-//                avr1File << avrSWAP[i] << endl;
-//            }
-//        }
+        if(dbg && itime==1)
+        {
+            OFstream avr1File("avrSWAP1");
+            for(int i=0; i<AVRSIZE; i++)
+            {
+                avr1File << avrSWAP[i] << endl;
+            }
+        }
 
         // Save errors
         rotSpdErr.append(rotSpd[itime] - rotSpdTable->value(t));
@@ -123,7 +125,7 @@ int main(int argc, char *argv[])
     #include "calcErrorStats.H"
 
     fileName postProcDir = runTime.path()/"postProcessing";
-    Info << "Writing output to " << postProcDir << endl;
+    Info << "\nWriting output to " << postProcDir << endl;
     if (!isDir(postProcDir))
     {
         mkDir(postProcDir);

@@ -44,9 +44,12 @@ avrSWAP[0] = 0; // Status flag: 0 is first call, 1 for all subsequent time steps
 
 avrSWAP[0] = 1;
 
-//OFstream avr0File("avrSWAP0");
-//for(int i=0; i<AVRSIZE; i++)
-//{
-//    avr0File << avrSWAP[i] << endl;
-//}
+if(dbg)
+{
+    OFstream avr0File("avrSWAP0");
+    for(int i=0; i<AVRSIZE; i++)
+    {
+        avr0File << avrSWAP[i] << endl;
+    }
+}
 
