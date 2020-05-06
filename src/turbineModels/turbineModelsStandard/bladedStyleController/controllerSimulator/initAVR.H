@@ -1,6 +1,7 @@
 // Define saved quantities for verification
 const scalar dt = runTime.deltaTValue();
 const label N = runTime.endTime().value() / dt;
+List<scalar> wspd(N+1, 0.0);
 List<scalar> rotSpd(N+1, 0.0);
 List<scalar> genTq(N+1, 0.0);
 List<scalar> blPitch(N+1, 0.0);
@@ -8,6 +9,7 @@ List<scalar> rotSpdErr;
 List<scalar> genTqErr;
 List<scalar> blPitchErr;
 
+wspd[0] = wspdTable->value(0.0);
 rotSpd[0] = rotSpdTable->value(0.0);
 genTq[0] = genTqTable->value(0.0);
 blPitch[0] = blPitchTable->value(0.0);
@@ -29,16 +31,18 @@ scalar t = runTime.value();
 Info<< "dt = " << dt << endl;
 avrSWAP[2] = dt;
 avrSWAP[60] = 3; // number of blades
-avrSWAP[20] = rotSpdTable->value(0); // initial rotation speed [rad/s]
-avrSWAP[26] = wspdTable->value(0); // initial hub wind speed [m/s]
+avrSWAP[20] = rotSpd[0]; // initial rotation speed [rad/s]
+avrSWAP[26] = wspd[0]; // initial hub wind speed [m/s]
 
 const int char_buffer = 500; // TODO: IS THIS CORRECT?
 avrSWAP[0] = 0; // Status flag: 0 is first call, 1 for all subsequent time steps, -1 for final call
-avrSWAP[58] = BUFFERSIZE; // TODO: IS THIS A TYPO (should be 48)?
-avrSWAP[48] = BUFFERSIZE; // size of avcMSG??
-avrSWAP[49] = sizeof(accINFILE) / sizeof(*accINFILE); // size of accINFILE
-avrSWAP[50] = sizeof(avcOUTNAME) / sizeof(*avcOUTNAME); // size of avcOUTNAME
-avrSWAP[51] = BUFFERSIZE; // TODO: IS THIS USED?
+avrSWAP[58] = char_buffer; // TODO: IS THIS A TYPO (should be 48)?
+//avrSWAP[48] = BUFFERSIZE; // size of avcMSG??
+//avrSWAP[49] = sizeof(accINFILE) / sizeof(*accINFILE); // size of accINFILE
+//avrSWAP[50] = sizeof(avcOUTNAME) / sizeof(*avcOUTNAME); // size of avcOUTNAME
+avrSWAP[49] = sizeof(accINFILE) / sizeof(*accINFILE) - 1; // size of accINFILE
+avrSWAP[50] = char_buffer; // size of avcOUTNAME
+avrSWAP[51] = char_buffer; // TODO: IS THIS USED?
 
 // Initialize controller
 DISCON(avrSWAP, aviFAIL, accINFILE, avcOUTNAME, avcMSG);

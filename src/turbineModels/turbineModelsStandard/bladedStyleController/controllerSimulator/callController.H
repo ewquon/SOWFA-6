@@ -7,7 +7,7 @@ avrSWAP[14] = genSpd * genTq[itime-1] * genEff; // measured electrical power out
 avrSWAP[22] = genTq[itime-1]; // measured generator torque [N-m]
 avrSWAP[19] = genSpd; // measured generator speed [rad/s]
 avrSWAP[20] = rotSpd[itime]; // measured rotor speed [rad/s]
-avrSWAP[26] = ws; // hub wind speed [m/s]
+avrSWAP[26] = wspd[itime]; // hub wind speed [m/s]
 
 DISCON(avrSWAP, aviFAIL, accINFILE, avcOUTNAME, avcMSG);
 

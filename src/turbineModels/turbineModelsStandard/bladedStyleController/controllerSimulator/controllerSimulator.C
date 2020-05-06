@@ -38,6 +38,7 @@ Description
 #include "argList.H"
 #include "IOdictionary.H"
 #include "Function1.H"
+#include "OFstream.H"
 #include "interpolate2D.H"
 
 //#include "bladedStyleController.H"
@@ -63,11 +64,11 @@ int main(int argc, char *argv[])
         t = runTime.value();
         Info<< "Time = " << t << " " << endl;
         const label itime = runTime.timeIndex();
-        const scalar ws = wspdTable->value(runTime.value());
-        Info<< "  ws = " << ws << endl;
+        wspd[itime] = wspdTable->value(runTime.value());
+        Info<< "  ws = " << wspd[itime] << endl;
 
         // Load current Cq data
-        const scalar tsr = rotSpd[itime-1] * R / ws;
+        const scalar tsr = rotSpd[itime-1] * R / wspd[itime];
         Info<< "  tsr = " << tsr << endl;
         const scalar Cq = interpolate2D(blPitch[itime-1], tsr,
                                         refPitch,
@@ -76,7 +77,7 @@ int main(int argc, char *argv[])
         Info<< "  Cq = " << Cq << endl;
 
         // Update the turbine state
-        const scalar aeroTq = 0.5 * rho*ws*ws * R * (M_PI * R * R) * Cq;
+        const scalar aeroTq = 0.5 * rho*wspd[itime]*wspd[itime] * R * (M_PI * R * R) * Cq;
         Info<< "  aeroTq = " << aeroTq << endl;
         rotSpd[itime] = rotSpd[itime-1] 
                       + (dt/J)*(aeroTq*genEff - Ng*genTq[itime-1]);
@@ -96,7 +97,25 @@ int main(int argc, char *argv[])
         blPitchErr.append(blPitch[itime] - blPitchTable->value(t));
     }
 
-    Info<< "End\n" << endl;
+    // Check errors
+    #include "calcErrorStats.H"
+
+    fileName postProcDir = runTime.path()/"postProcessing";
+    Info << "Writing output to " << postProcDir << endl;
+    if (!isDir(postProcDir))
+    {
+        mkDir(postProcDir);
+    }
+    OFstream wspdFile(postProcDir/"windSpeed");
+    wspdFile << wspd;
+    OFstream rotSpdFile(postProcDir/"rotorSpeed");
+    rotSpdFile << rotSpd;
+    OFstream genTqFile(postProcDir/"generatorTorque");
+    genTqFile << genTq;
+    OFstream blPitchFile(postProcDir/"bladePitch");
+    blPitchFile << blPitch;
+
+    Info<< "\nEnd\n" << endl;
 
     return 0;
 }
