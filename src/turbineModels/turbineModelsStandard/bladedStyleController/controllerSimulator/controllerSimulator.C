@@ -85,7 +85,19 @@ int main(int argc, char *argv[])
         Info<< "  rotSpd = " << rotSpd[itime] << endl;
 
         // Call the controller
+        avrSWAP[1] = t; // current time [s]
+        avrSWAP[2] = dt; // communication interval [s]
+        avrSWAP[3] = blPitch[itime-1]; // blade 1 pitch angle [rad]
+        avrSWAP[32] = blPitch[itime-1]; // blade 2 pitch angle [rad]
+        avrSWAP[33] = blPitch[itime-1]; // blade 3 pitch angle [rad]
+        avrSWAP[14] = genSpd * genTq[itime-1] * genEff; // measured electrical power output [W]
+        avrSWAP[22] = genTq[itime-1]; // measured generator torque [N-m]
+        avrSWAP[19] = genSpd; // measured generator speed [rad/s]
+        avrSWAP[20] = rotSpd[itime]; // measured rotor speed [rad/s]
+        avrSWAP[26] = wspd[itime]; // hub wind speed [m/s]
+
         #include "callController.H"
+
         blPitch[itime] = avrSWAP[41];  // TODO: where do these controller states come from?
         genTq[itime] = avrSWAP[46];
         Info<< "  blPitch = " << blPitch[itime] << endl;

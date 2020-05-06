@@ -16,7 +16,8 @@ blPitch[0] = blPitchTable->value(0.0);
 
 // Define exchange variables
 float avrSWAP[AVRSIZE];
-int aviFAIL[] = {1};
+int istat = 1;
+int *aviFAIL = &istat;
 const char accINFILE[] = "DISCON.IN";
 const char avcOUTNAME[] = "SOWFA Controller Simulation";
 char avcMSG[BUFFERSIZE];
@@ -39,10 +40,10 @@ avrSWAP[50] = sizeof(avcOUTNAME) / sizeof(*avcOUTNAME); // size of avcOUTNAME
 
 // Initialize controller
 avrSWAP[0] = 0; // Status flag: 0 is first call, 1 for all subsequent time steps, -1 for final call
-DISCON(avrSWAP, aviFAIL, accINFILE, avcOUTNAME, avcMSG);
+#include "callController.H"
+
 avrSWAP[0] = 1;
 
-// DEBUG
 //OFstream avr0File("avrSWAP0");
 //for(int i=0; i<AVRSIZE; i++)
 //{
