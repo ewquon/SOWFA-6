@@ -33,19 +33,19 @@ avrSWAP[2] = dt;
 avrSWAP[60] = 3; // number of blades
 avrSWAP[20] = rotSpd[0]; // initial rotation speed [rad/s]
 avrSWAP[26] = wspd[0]; // initial hub wind speed [m/s]
-
-const int char_buffer = 500; // TODO: IS THIS CORRECT?
-avrSWAP[0] = 0; // Status flag: 0 is first call, 1 for all subsequent time steps, -1 for final call
-avrSWAP[58] = char_buffer; // TODO: IS THIS A TYPO (should be 48)?
-//avrSWAP[48] = BUFFERSIZE; // size of avcMSG??
-//avrSWAP[49] = sizeof(accINFILE) / sizeof(*accINFILE); // size of accINFILE
-//avrSWAP[50] = sizeof(avcOUTNAME) / sizeof(*avcOUTNAME); // size of avcOUTNAME
-avrSWAP[49] = sizeof(accINFILE) / sizeof(*accINFILE) - 1; // size of accINFILE
-avrSWAP[50] = char_buffer; // size of avcOUTNAME
-avrSWAP[51] = char_buffer; // TODO: IS THIS USED?
+avrSWAP[48] = BUFFERSIZE; // size of avcMSG
+avrSWAP[49] = sizeof(accINFILE) / sizeof(*accINFILE); // size of accINFILE
+avrSWAP[50] = sizeof(avcOUTNAME) / sizeof(*avcOUTNAME); // size of avcOUTNAME
 
 // Initialize controller
+avrSWAP[0] = 0; // Status flag: 0 is first call, 1 for all subsequent time steps, -1 for final call
 DISCON(avrSWAP, aviFAIL, accINFILE, avcOUTNAME, avcMSG);
-
 avrSWAP[0] = 1;
+
+// DEBUG
+//OFstream avr0File("avrSWAP0");
+//for(int i=0; i<AVRSIZE; i++)
+//{
+//    avr0File << avrSWAP[i] << endl;
+//}
 

@@ -91,6 +91,16 @@ int main(int argc, char *argv[])
         Info<< "  blPitch = " << blPitch[itime] << endl;
         Info<< "  genTq = " << genTq[itime] << endl;
 
+        // DEBUG
+//        if(itime==1)
+//        {
+//            OFstream avr1File("avrSWAP1");
+//            for(int i=0; i<AVRSIZE; i++)
+//            {
+//                avr1File << avrSWAP[i] << endl;
+//            }
+//        }
+
         // Save errors
         rotSpdErr.append(rotSpd[itime] - rotSpdTable->value(t));
         genTqErr.append(genTq[itime] - genTqTable->value(t));
