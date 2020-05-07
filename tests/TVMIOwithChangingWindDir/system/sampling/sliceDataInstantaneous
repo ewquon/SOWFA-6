@@ -5,11 +5,12 @@
           enabled               true;
           interpolationScheme   cell;
           writeControl          adjustableRunTime;
-          writeInterval         1;
+          writeInterval         10;
           surfaceFormat         vtk;
           fields
           (
               U
+              p_rgh
           );
           surfaces
           (

@@ -18,7 +18,8 @@ FoamFile
 #include        "../setUp"
 
 // Indicate the type of turbulence model to be used (laminar, LES, RAS).
-simulationType  LES;
+simulationType  laminar;
+//simulationType  LES;
 
 LES
 {

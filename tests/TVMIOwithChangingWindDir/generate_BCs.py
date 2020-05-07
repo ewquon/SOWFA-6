@@ -22,11 +22,15 @@ output_format = {
 wspd = 10.
 angmax = 30.
 drivingfreq = 10. # interval between boundaryData planes [s]
-simlen = 600. # simulation length [s]
+period = 600.
+simlen = 1800. # simulation length [s]
 
 # Note: The start time here is arbitrary since the simulation time doesn't
 #       actually correspond to a real datetime.
 sowfastart = '2000-01-01 00:00'
+
+csvout = 'bkgwind_for_paraview' # for debug
+csvperiod = 10.0 # should match sliceDataInstanenous writeInterval
 
 #==============================================================================
 #
@@ -60,7 +64,7 @@ ds = xr.Dataset(
 )
 
 ## - Setup wind vector
-ang = angmax * np.sin(2*np.pi*t/simlen)
+ang = angmax * np.sin(2*np.pi*t/period)
 u = wspd * np.cos(np.pi/180*ang)
 v = wspd * np.sin(np.pi/180*ang)
 ds['u'] = ('datetime', u)
@@ -68,6 +72,25 @@ ds['v'] = ('datetime', v)
 ds['w'] = 0 * ds['u']
 print('Generated boundary dataset:')
 print(ds)
+
+## - Write out wind time history
+w = np.zeros(u.shape)
+df = pd.DataFrame(data={'u':u,'v':v,'w':w}, index=pd.Index(t,name='Time'))
+df = df.reindex(np.arange(0,simlen+csvperiod,csvperiod))
+df = df.interpolate(method='index')
+df.to_csv('bkgwind.csv')
+if not os.path.isdir(csvout):
+    os.makedirs(csvout)
+
+## - Write out background wind as a series
+##   (to plot wind vector in paraview)
+print('Writing out background wind as a csv series (for ParaView)...')
+xout = sowfa['xMin']
+zout = 2*sowfa['zMax']
+for i,(ti,row) in enumerate(df.iterrows()):
+    if i==0: continue
+    with open(os.path.join(csvout,'bkgwind_{:05d}.csv'.format(i)),'w') as f:
+        f.write('x,y,z,u,v,w\n{:g},0,{:g},{:g},{:g},{:g}'.format(xout,zout,*row.values))
 
 # Write out boundaryData
 

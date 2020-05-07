@@ -27,7 +27,7 @@ FoamFile
 
   stopAt            endTime;
 
-  endTime           1800.0;
+  endTime           1800.0; // period=600 s
 
   deltaT            0.5;
 
@@ -60,6 +60,7 @@ FoamFile
   functions
   {
     #include "sampling/virtualMetMast"
+    #include "sampling/sliceDataInstantaneous"
   }
 
 // ************************************************************************* //
