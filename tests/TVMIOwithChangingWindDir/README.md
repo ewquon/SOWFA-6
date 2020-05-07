@@ -2,7 +2,10 @@
 
 This small test case tests the timeVaryingMappedInletOutlet (TVMIO) boundary
 condition, simulating a uniform wind with sinusoidally varying wind direction.
-There is neutral stratification with negligible Coriolis force.
+There is neutral stratification with negligible Coriolis force. For solution
+stability, buoyancy effects have been turned off by setting graviational
+acceleration to 0, which eliminates vertical fluctuations and renders the
+problem effectively 2D. 
 
 ## Dependencies
 These instructions assume starting from scratch a clean environment. If you
