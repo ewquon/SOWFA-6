@@ -49,6 +49,7 @@ Description
 #include "pimpleControl.H"
 #include "ABL.H"
 #include "horizontalAxisWindTurbinesALMOpenFAST.H"
+#include "clockTime.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -94,8 +95,11 @@ int main(int argc, char *argv[])
         Info << "Time = " << runTime.timeName() << tab;
         Info << "Time Step = " << runTime.timeIndex() << endl;
 
+        Foam::clockTime timing;
+
         // --- Update the turbine array
         turbines.update();
+        Info<< "SDV update: turbines " << timing.timeIncrement() << endl;
 
         // Outer-iteration loop.
         while (pimple.loop())
@@ -103,13 +107,17 @@ int main(int argc, char *argv[])
             // Update the source terms.
             momentumSourceTerm.update(pimple.finalPimpleIter());
             temperatureSourceTerm.update(pimple.finalPimpleIter());
+            Info<< "SDV update: source terms " << timing.timeIncrement() << endl;
 
             // Predictor step.
             Info << "   Predictor" << endl;
 
             #include "UEqn.H"
+            Info<< "SDV update: solve U " << timing.timeIncrement() << endl;
             #include "turbulenceCorrect.H"
+            Info<< "SDV update: update turbulence " << timing.timeIncrement() << endl;
             #include "TEqn.H"
+            Info<< "SDV update: solve T " << timing.timeIncrement() << endl;
 
             // Corrector steps.
             int corrIter = 1;
@@ -118,15 +126,20 @@ int main(int argc, char *argv[])
                 Info << "   Corrector Step " << corrIter << endl;
 
                 #include "pEqn.H"
+                Info<< "SDV update: solve p " << timing.timeIncrement() << endl;
                 #include "turbulenceCorrect.H"
+                Info<< "SDV update: update turbulence " << timing.timeIncrement() << endl;
                 #include "TEqn.H"
+                Info<< "SDV update: solve T " << timing.timeIncrement() << endl;
 
                 corrIter++;
             }
 
             // Compute the continuity errors.
             #include "computeDivergence.H"
+            Info<< "SDV update: compute div " << timing.timeIncrement() << endl;
         }
+        Info<< "SDV update: TOTAL " << timing.elapsedTime() << endl;
 
         // Update timeVaryingMappedInletOutlet parameters
         #include "updateFixesValue.H"

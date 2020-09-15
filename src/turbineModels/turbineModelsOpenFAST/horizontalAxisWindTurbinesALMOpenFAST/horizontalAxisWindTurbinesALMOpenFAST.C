@@ -36,6 +36,8 @@ License
 #include "horizontalAxisWindTurbinesALMOpenFAST.H"
 #include "interpolateXY.H"
 
+#include "clockTime.H"
+
 namespace Foam
 {
 namespace turbineModels
@@ -748,10 +750,12 @@ void horizontalAxisWindTurbinesALMOpenFAST::updateRotorSearchCells(int turbineNu
     // level for each turbine and the j-index is at the individual blade level.)
     int i = turbineNumber;
 
+    //Foam::clockTime timing;
 
     // This will be the list of cells that this rotor influences
     DynamicList<label> influenceCellsI;
 
+    //Info<< "Time to init label list " << timing.timeIncrement() << endl;
 
     // First compute the radius of the force projection (to the radius
     // where the projection is only 0.001 its maximum value - this seems
@@ -767,6 +771,10 @@ void horizontalAxisWindTurbinesALMOpenFAST::updateRotorSearchCells(int turbineNu
            }
         }
     }
+    Info<< "updateRotorSearchCells("<<turbineNumber<<"): bladeChordMax ="
+        << bladeChordMax << endl;
+
+    //Info<< "Time to update bladeChordMax " << timing.timeIncrement() << endl;
 
 /*
     scalar bladeUserDefMax = -1.0E6;
@@ -808,6 +816,7 @@ void horizontalAxisWindTurbinesALMOpenFAST::updateRotorSearchCells(int turbineNu
     scalar tipRadiusMax = 0.0;
   //scalar towerTopToTipMax = 0.0;
 
+    //Info<< "Time to eval bladeProjectionRadius and init other stuff " << timing.timeIncrement() << endl;
 
     forAll(preCone,j)
     {
@@ -861,7 +870,7 @@ void horizontalAxisWindTurbinesALMOpenFAST::updateRotorSearchCells(int turbineNu
         */
     }
 
-
+    //Info<< "Time to update preConeMax, tipRadiusMax " << timing.timeIncrement() << endl;
 
     // Defines the search cell set as a disk with thickness that surrounds the 
     // rotor revolution plane.  It isn't really a disk because it accounts for
@@ -905,11 +914,14 @@ void horizontalAxisWindTurbinesALMOpenFAST::updateRotorSearchCells(int turbineNu
         // Nothing for now.
     }
 
-   
+    //Info<< "Time for disk search " << timing.timeIncrement() << endl;
+
     // Populate the bladeInfluenceCells list for this turbine.
     bladeInfluenceCells[i].clear();
     bladeInfluenceCells[i] = influenceCellsI;
     influenceCellsI.clear();
+
+    //Info<< "Time to set bladeInfluenceCells " << timing.timeIncrement() << endl;
 }
 
 
@@ -2738,6 +2750,8 @@ List<scalar> horizontalAxisWindTurbinesALMOpenFAST::updateBladeBodyForce(int tur
         // Proceed to compute body forces for turbine i only if there are influence cells on this processor for this turbine.
         if (bladeInfluenceCells[i].size() > 0)
         {
+            Foam::clockTime timing;
+            int cellsUpdated = 0;
 
             // Get necessary axes.
             
@@ -2749,11 +2763,75 @@ List<scalar> horizontalAxisWindTurbinesALMOpenFAST::updateBladeBodyForce(int tur
             vector horizontalVector = -(axialVector ^ verticalVector);
             horizontalVector = horizontalVector / mag(horizontalVector);
             
-
-
             // For each blade.
             forAll(bladePointForce[i], j)
             {
+            if((bladeForceProjectionType[i] == "uniformGaussian") &&
+               (bladeForceProjectionDirection[i] == "sampledVelocityAligned"))
+              {
+                Pout<< "accelerated path" << endl;
+/*****************  ACCELERATED PATH ******************/
+                // For each blade point.
+                forAll(bladePointForce[i][j], k)
+                {
+                    scalar forceLift = 0.0;
+                    scalar forceDrag = 0.0;
+
+                    scalar forceDragPosSum = 0.0;
+                    scalar forceDragNegSum = 0.0;
+                    scalar forceLiftSum = 0.0;
+                    vector forceSum = vector::zero;
+
+                    // For each influence cell.
+                    forAll(bladeInfluenceCells[i], m)
+                    {
+                        // Compute the distance between the actuator point and blade point.
+                        // - Cartesian coordinates
+                        vector disVector = (mesh_.C()[bladeInfluenceCells[i][m]] - bladePoints[i][j][k]);
+                        scalar dis = mag(disVector);
+
+                        if (dis <= bladeProjectionRadius[i])
+                        {
+                            // Compute the blade force projection at this point.
+                            vector d = vector::zero;
+                            scalar spreading = 1.0;
+                            spreading = uniformGaussian3D(bladeEpsilon[i][0], dis);
+                            
+                            // Add this spreading to the overall force projection field.
+                            gBlade[bladeInfluenceCells[i][m]] += spreading;
+ 
+                            // Get the local velocity in the fixed frame of reference.
+                            vector localVelocity = U_[bladeInfluenceCells[i][m]];
+
+                            // Add on the relative velocity due to blade rotation.
+                            localVelocity += rFromShaft[bladeInfluenceCells[i][m]] * rotorSpeed[i] * bladeAlignedVectors[i][j][k][1];
+                            Urel[bladeInfluenceCells[i][m]] = localVelocity;
+
+                            // Compute the body force contribution.
+                            // - If bladeBodyForceScaling is enabled, that means that we insist that the integrated body force thrust and torque match the 
+                            // - thrust and torque coming from the actuator line point forces.  To do this, we first take a pass without scaling and see
+                            // - how far off the thrust and torque are, and then a second pass doing the scaling.  The passes are controlled in the main
+                            // - update function.
+                            bodyForce[bladeInfluenceCells[i][m]] += scalar(updateBodyForce) * spreading * 
+                                                                   ( projectionScaling[0]*bladePointForce[i][j][k] 
+                                                                  + (projectionScaling[1] - projectionScaling[0]) * ((bladePointForce[i][j][k] & mainShaftOrientation[i]) * mainShaftOrientation[i]) );
+                            // Compute global body-force-derived forces/moments for all force projection directions except
+                            // the local-velocity-aligned method that is corrected.  We will do this after correction.
+                           rotorAxialForceBodySum -= ( mainShaftOrientation[i] & (spreading *
+                                                     ( projectionScaling[0]*bladePointForce[i][j][k]
+                                                    + (projectionScaling[1] - projectionScaling[0]) * ((bladePointForce[i][j][k] & mainShaftOrientation[i]) * mainShaftOrientation[i]) ) ) ) * mesh_.V()[bladeInfluenceCells[i][m]];
+                           rotorTorqueBodySum +=     ( bladeAlignedVectors[i][j][k][1] & (spreading *
+                                                     ( projectionScaling[0]*bladePointForce[i][j][k]
+                                                    + (projectionScaling[1] - projectionScaling[0]) * ((bladePointForce[i][j][k] & mainShaftOrientation[i]) * mainShaftOrientation[i]) ) ) ) * mesh_.V()[bladeInfluenceCells[i][m]] * bladePointRadius[i][j][k];
+                            
+                        }
+                        cellsUpdated++;
+                    } // loop over all influence cells
+                } // loop over each actuator point
+/*****************  END OF ACCELERATED PATH ******************/
+              }
+              else
+              {
                 // For each blade point.
                 forAll(bladePointForce[i][j], k)
                 {
@@ -2908,7 +2986,9 @@ List<scalar> horizontalAxisWindTurbinesALMOpenFAST::updateBladeBodyForce(int tur
                                                         + (projectionScaling[1] - projectionScaling[0]) * ((bladePointForce[i][j][k] & mainShaftOrientation[i]) * mainShaftOrientation[i]) ) ) ) * mesh_.V()[bladeInfluenceCells[i][m]] * bladePointRadius[i][j][k];
                             }
                         }
-                    }
+
+                        cellsUpdated++;
+                    } // loop over all influence cells
 
                     /*
                     // Parallel sum the integrated body force lift and +/- drag.
@@ -3028,8 +3108,12 @@ List<scalar> horizontalAxisWindTurbinesALMOpenFAST::updateBladeBodyForce(int tur
                     */
 
 
-                }  
-            }
+                } // loop over each actuator point
+              } // if not accelerated path (EWQ)
+            } // loop over each blade
+
+            Pout<< "turbine update: updateBladeBodyForce (" << cellsUpdated << ") "
+                << timing.timeIncrement() << endl;
         }
         // Compute global actuator-element-force-derived forces/moments
       //rotorTorqueSum += rotorTorque[i];
@@ -4028,19 +4112,23 @@ void horizontalAxisWindTurbinesALMOpenFAST::update()
 
     if(actuatorUpdateType[0] == "oldPosition")
     {
+        Foam::clockTime timing;
         // Find out which processor controls which actuator point,
         // and with that informatio sample the wind at the actuator
         // points.
         updateBladePointControlProcNo();
         updateNacellePointControlProcNo();
         updateTowerPointControlProcNo();
+        //Info<< "turbine update: control proc no " << timing.timeIncrement() << endl;
 
         sampleBladePointWindVectors();
         sampleNacellePointWindVectors();
         sampleTowerPointWindVectors();
+        //Info<< "turbine update: sample wind vectors " << timing.timeIncrement() << endl;
 
         // Send the sampled velocities out to FAST.
         sendVelocities();
+        //Info<< "turbine update: send velocities " << timing.timeIncrement() << endl;
 
         // Compute the geometry aligned velocity.
       //computeBladeAlignedVelocity();       
@@ -4055,19 +4143,24 @@ void horizontalAxisWindTurbinesALMOpenFAST::update()
       //yawNacelle();
 
         // Update the turbine state.
+        scalar FASTSubStepTiming = 0;
         if (p < numTurbines)
         {
 	  //Pout <<  "nFASTSubSteps[" << p << "] = " << nFASTSubSteps[p] << endl ;
+            timing.timeIncrement();
             for (int n = 0; n < nFASTSubSteps[p]; n++)
             {
                 FAST->step();
             }
+            FASTSubStepTiming = timing.timeIncrement();
+            Info<< "turbine update: FAST substeps " << FASTSubStepTiming << endl;
         }
 
         List<scalar> mainShaftOrientationChange;
         List<scalar> rotorApexChange;
 
         getPositions();
+        //Info<< "turbine update: get positions " << timing.timeIncrement() << endl;
 
         // Find search cells.
         forAll(turbineName,i)
@@ -4094,14 +4187,19 @@ void horizontalAxisWindTurbinesALMOpenFAST::update()
                rotorApexBeforeSearch[i] = 1.0 * rotorApex[i];
             }
         }
+        //Info<< "turbine update: find search cells " << timing.timeIncrement() << endl;
+
         updateTurbinesControlled();
+        //Info<< "turbine update: turbines controlled " << timing.timeIncrement() << endl;
 
         // Recompute the blade-aligned coordinate system.
         computeBladeAlignedVectors();
+        //Info<< "turbine update: blade aligned vectors " << timing.timeIncrement() << endl;
 
       //Info << "bladeWindVectorsCartesian = " << bladeWindVectorsCartesian << endl;
 
         computeBladePointRadius();
+        //Info<< "turbine update: blade point radius " << timing.timeIncrement() << endl;
 
         // Recompute radius from main shaft axis if body force
         // is projected normal to the streamlines
@@ -4112,6 +4210,10 @@ void horizontalAxisWindTurbinesALMOpenFAST::update()
                 updateRadius(i);
             }
         }
+        //Info<< "turbine update: update radius " << timing.timeIncrement() << endl;
+
+        scalar totalUpdateTiming = timing.elapsedTime();
+        Info<< "turbine update: non-FAST " << totalUpdateTiming - FASTSubStepTiming << endl;
     }
     else if(actuatorUpdateType[0] == "newPosition")
     {
@@ -4200,8 +4302,12 @@ void horizontalAxisWindTurbinesALMOpenFAST::update()
         computeBladeAlignedVelocity();       
     }
 
+    Foam::clockTime timing;
+
     // Compute the actuator point forces.
     getForces();
+    Info<< "turbine update: getForces() " << timing.timeIncrement() << endl;
+
     // Obtain the relative velocities from openfast
     //getRelativeVel();
 
@@ -4250,6 +4356,7 @@ void horizontalAxisWindTurbinesALMOpenFAST::update()
             updateTowerBodyForce(i);
         }
     }
+    Info<< "turbine update: force projection " << timing.timeIncrement() << endl;
 
     // Print turbine output to file.
     outputIndex++;
@@ -4274,9 +4381,11 @@ void horizontalAxisWindTurbinesALMOpenFAST::update()
     {
         printOutputFiles();
     }
+    Info<< "turbine update: file output " << timing.timeIncrement() << endl;
 
     // Update the force on boundaries.
     bodyForce.correctBoundaryConditions();
+    Info<< "turbine update: correct BCs " << timing.timeIncrement() << endl;
 
     // Now that at least the first time step is finished, set pastFirstTimeStep
     // to true.
