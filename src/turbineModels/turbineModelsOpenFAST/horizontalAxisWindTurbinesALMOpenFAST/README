@@ -1,0 +1,37 @@
+# Optimizations to "default" blade projection path
+
+bladeForceProjectionType         "uniformGaussian"
+bladeForceProjectionDirection    "sampledVelocityAligned"
+
+Timings from running ~100 time steps of example.uniform.inflow.ALM case on 2
+nodes (72 cores in total) with approximately 40k cells/core.
+
+starting commit: `8f3264f3b538effd48a39256a778679ea6ed7d19`
+
+## accelerated.0:
+- Remove if statements inside of `bladeInfluenceCells` inner loop
+- Result: 6% reduction in non-FAST time-step advancement wallclock time
+  (compared to non-accelerated case)
+
+## accelerated.1:
+- Replace indexed multi-level lists with a new single variable, e.g.,
+    vector bladePointForceI = bladePointForce[i][j][k];
+- Result: Negligible improvement (or slight slowdown)
+  In retrospect, this makes sense because additional work is done in allocating
+  a new vector and copying values. It would have made more sense to create a 
+  pointer to the actual data, but this should be functionally equivalent to the
+  original code and the only added value is to clean up the code slightly.
+
+## accelerated.2:
+- Eliminate unused variables--further eliminates generalizability
+- Result: 55% reduction in non-FAST time-step advancement wallclock time
+  (compared ot non-accelerated case)
+
+## accelerated.3:
+- Replace call to `computeBladeProjectionFunction` with direct evaluation for
+  "uniformGaussian"
+- Result: Negligible improvement over previous case
+  Perhaps the compiler optimization already did some inlining of this function
+  so what I did was functionally equivalent?
+
+
